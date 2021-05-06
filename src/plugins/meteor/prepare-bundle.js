@@ -4,6 +4,7 @@ import {
   getNodeVersion,
   runCommand
 } from './utils';
+
 import fs from 'fs';
 
 export function prepareBundleSupported(dockerConfig) {
@@ -76,6 +77,8 @@ export async function prepareBundleLocally(
 
   console.log('');
   console.log('=> Updating base image');
+  console.log('FLO: This is working?!');
+
   await runCommand('docker', ['login', '--password-stdin', '--username', privateDockerRegistry.username, privateDockerRegistry.host], { stdin: privateDockerRegistry.password });
   await runCommand('docker', ['pull', appConfig.docker.image]);
 

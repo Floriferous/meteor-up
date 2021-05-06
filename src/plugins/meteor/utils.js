@@ -1,4 +1,5 @@
 import { cloneDeep, flatMap } from 'lodash';
+
 import fs from 'fs';
 import os from 'os';
 import {
@@ -141,46 +142,50 @@ export function tmpBuildPath(appPath, api) {
 
 export function runCommand(_executable, _args, { cwd, stdin } = {}) {
   return new Promise((resolve, reject) => {
-    let executable = _executable;
-    let args = _args;
-    const isWin = /^win/.test(process.platform);
-    if (isWin) {
-      // Sometimes cmd.exe not available in the path
-      // See: http://goo.gl/ADmzoD
-      executable = process.env.comspec || 'cmd.exe';
-      args = ['/c', _executable].concat(args);
-    }
-
-    const options = {
-      cwd,
-      stdio: [
-        stdin ? 'pipe' : process.stdin,
-        process.stdout,
-        process.stderr
-      ]
-    };
-    const commandProcess = spawn(executable, args, options);
-
-    if (stdin) {
-      commandProcess.stdin.setEncoding('utf-8');
-      commandProcess.stdin.write(`${stdin}\r\n`);
-      commandProcess.stdin.end();
-    }
-
-    commandProcess.on('error', e => {
-      console.log(options);
-      console.log(e);
-      console.log(`This error usually happens when ${_executable} is not installed.`);
-
-      return reject(e);
-    });
-    commandProcess.on('close', code => {
-      if (code > 0) {
-        return reject(new Error(`"${executable} ${args.join(' ')}" exited with the code ${code}`));
+    try {
+      let executable = _executable;
+      let args = _args;
+      const isWin = /^win/.test(process.platform);
+      if (isWin) {
+        // Sometimes cmd.exe not available in the path
+        // See: http://goo.gl/ADmzoD
+        executable = process.env.comspec || 'cmd.exe';
+        args = ['/c', _executable].concat(args);
       }
 
-      resolve();
-    });
+      const options = {
+        cwd,
+        stdio: [
+          stdin ? 'pipe' : process.stdin,
+          process.stdout,
+          process.stderr
+        ]
+      };
+      const commandProcess = spawn(executable, args, options);
+
+      if (stdin) {
+        commandProcess.stdin.setEncoding('utf-8');
+        commandProcess.stdin.write(`${stdin}\r\n`);
+        commandProcess.stdin.end();
+      }
+
+      commandProcess.on('error', e => {
+        console.log(options);
+        console.log(e);
+        console.log(`This error usually happens when ${_executable} is not installed.`);
+
+        return reject(e);
+      });
+      commandProcess.on('close', code => {
+        if (code > 0) {
+          return reject(new Error(`"${executable} ${args.join(' ')}" exited with the code ${code}`));
+        }
+
+        resolve();
+      });
+    } catch (error) {
+      reject(error);
+    }
   });
 }
 
